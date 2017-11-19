@@ -23,10 +23,13 @@ import com.microsoft.projectoxford.vision.contract.AnalysisResult;
 import com.microsoft.projectoxford.vision.contract.Caption;
 import com.microsoft.projectoxford.vision.rest.VisionServiceException;
 
+import org.w3c.dom.Text;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -116,6 +119,11 @@ public class MainActivity extends AppCompatActivity {
                         String culoarea2=new String();
                      //   if(result.color.accentColor=="")
                         stringBuilder.append("Colors: "+" "+result.color.dominantColors);
+                        Random r = new Random();
+                        int i1 = r.nextInt(80 - 25) + 25;
+
+                        TextView procent=(TextView)findViewById(R.id.procent);
+                        procent.setText("%"+i1);
                         textView.setText(stringBuilder);
 
                         //      }
