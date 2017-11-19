@@ -32,6 +32,7 @@ public class MainActivity extends AppCompatActivity {
 
     Bitmap mBitmap;
     ImageView imageView;
+    TextView textView;
     public VisionServiceClient visionServiceClient = new VisionServiceRestClient("065713641e6e48228364a33d44bc50bc", "https://westcentralus.api.cognitive.microsoft.com/vision/v1.0");
 
     private final static int SELECT_PHOTO = 12345;
@@ -42,15 +43,23 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
 
-         imageView = (ImageView)findViewById(R.id.imageView);
+        imageView = (ImageView) findViewById(R.id.imageView);
 
-        Button btnProcess = (Button)findViewById(R.id.btnProcess);
-        Button upload = (Button)findViewById(R.id.upload);
+        Button btnProcess = (Button) findViewById(R.id.btnProcess);
+        Button camera = (Button) findViewById(R.id.camerabtn);
+        Button upload = (Button) findViewById(R.id.upload);
+        textView = (TextView) findViewById(R.id.txtDescription);
 
-      //  imageView.setImageBitmap(mBitmap);
+        //  imageView.setImageBitmap(mBitmap);
 
         //Convert image to stream
-
+        camera.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+              Intent cameraIntent=new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+              startActivityForResult(cameraIntent, 0);
+            }
+        });
 
         upload.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -68,25 +77,26 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
 
                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                 mBitmap.compress(Bitmap.CompressFormat.JPEG,100,outputStream);
-                 final ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
-                final AsyncTask<InputStream,String,String> visionTask = new AsyncTask<InputStream, String, String>() {
+                mBitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
+                final ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
+                final AsyncTask<InputStream, String, String> visionTask = new AsyncTask<InputStream, String, String>() {
                     ProgressDialog mDialog = new ProgressDialog(MainActivity.this);
+
                     @Override
                     protected String doInBackground(InputStream... params) {
-                      try{
-                          publishProgress("Recognizing....");
-                          String[] features = {"Color"};
-                          String[] details = {};
+                        try {
+                            publishProgress("Recognizing....");
+                            String[] features = {"Color"};
+                            String[] details = {};
 
-                          AnalysisResult result = visionServiceClient.analyzeImage(params[0],features,details);
+                            AnalysisResult result = visionServiceClient.analyzeImage(params[0], features, details);
 
-                          String strResult = new Gson().toJson(result);
-                          return strResult;
+                            String strResult = new Gson().toJson(result);
+                            return strResult;
 
-                      } catch (Exception e) {
-                         return null;
-                      }
+                        } catch (Exception e) {
+                            return null;
+                        }
                     }
 
                     @Override
@@ -98,14 +108,18 @@ public class MainActivity extends AppCompatActivity {
                     protected void onPostExecute(String s) {
                         mDialog.dismiss();
 
-                        AnalysisResult result = new Gson().fromJson(s,AnalysisResult.class);
-                        TextView textView = (TextView)findViewById(R.id.txtDescription);
+                        AnalysisResult result = new Gson().fromJson(s, AnalysisResult.class);
+
                         StringBuilder stringBuilder = new StringBuilder();
-                   //     for(Caption caption:result.description.captions)
-                   //     {
-                            stringBuilder.append(result.color.dominantColorForeground+" "+result.color.dominantColorBackground +" "+result.color.accentColor);
-                  //      }
+                        //     for(Caption caption:result.description.captions)
+                        //     {
+                        String culoarea2=new String();
+                     //   if(result.color.accentColor=="")
+                        stringBuilder.append("Colors: "+" "+result.color.dominantColors);
                         textView.setText(stringBuilder);
+
+                        //      }
+
 
                     }
 
@@ -126,17 +140,17 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
+        mBitmap=(Bitmap)data.getExtras().get("data");
+        imageView.setImageBitmap(mBitmap);
 
-        if (requestCode == SELECT_PHOTO && resultCode == RESULT_OK && data != null && data.getData()!=null) {
+        if (requestCode == SELECT_PHOTO && resultCode == RESULT_OK && data != null && data.getData() != null) {
             Uri pickedImage = data.getData();
-           try {
-                 mBitmap=MediaStore.Images.Media.getBitmap(getContentResolver(),pickedImage);
-                 imageView.setImageBitmap(mBitmap);
-           }
-           catch(IOException e)
-           {
-               e.printStackTrace();
-           }
+            try {
+                mBitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), pickedImage);
+                imageView.setImageBitmap(mBitmap);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
         }
     }
