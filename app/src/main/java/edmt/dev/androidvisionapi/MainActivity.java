@@ -1,9 +1,14 @@
 package edmt.dev.androidvisionapi;
 
 import android.app.ProgressDialog;
+import android.content.Intent;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
+import android.net.Uri;
 import android.os.AsyncTask;
+import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -25,36 +30,53 @@ import java.io.InputStream;
 
 public class MainActivity extends AppCompatActivity {
 
-    public VisionServiceClient visionServiceClient = new VisionServiceRestClient("ac585835001b490a941d07984f938e77");
+    Bitmap mBitmap;
+    ImageView imageView;
+    public VisionServiceClient visionServiceClient = new VisionServiceRestClient("065713641e6e48228364a33d44bc50bc", "https://westcentralus.api.cognitive.microsoft.com/vision/v1.0");
 
+    private final static int SELECT_PHOTO = 12345;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Bitmap mBitmap = BitmapFactory.decodeResource(getResources(),R.drawable.smile);
-        ImageView imageView = (ImageView)findViewById(R.id.imageView);
+
+         imageView = (ImageView)findViewById(R.id.imageView);
 
         Button btnProcess = (Button)findViewById(R.id.btnProcess);
+        Button upload = (Button)findViewById(R.id.upload);
 
-        imageView.setImageBitmap(mBitmap);
+      //  imageView.setImageBitmap(mBitmap);
 
         //Convert image to stream
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        mBitmap.compress(Bitmap.CompressFormat.JPEG,100,outputStream);
-        final ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
+
+
+        upload.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
+                photoPickerIntent.setType("image/*");
+                startActivityForResult(photoPickerIntent, SELECT_PHOTO);
+
+            }
+        });
+
 
         btnProcess.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                 mBitmap.compress(Bitmap.CompressFormat.JPEG,100,outputStream);
+                 final ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
                 final AsyncTask<InputStream,String,String> visionTask = new AsyncTask<InputStream, String, String>() {
                     ProgressDialog mDialog = new ProgressDialog(MainActivity.this);
                     @Override
                     protected String doInBackground(InputStream... params) {
                       try{
                           publishProgress("Recognizing....");
-                          String[] features = {"Description"};
+                          String[] features = {"Color"};
                           String[] details = {};
 
                           AnalysisResult result = visionServiceClient.analyzeImage(params[0],features,details);
@@ -79,10 +101,10 @@ public class MainActivity extends AppCompatActivity {
                         AnalysisResult result = new Gson().fromJson(s,AnalysisResult.class);
                         TextView textView = (TextView)findViewById(R.id.txtDescription);
                         StringBuilder stringBuilder = new StringBuilder();
-                        for(Caption caption:result.description.captions)
-                        {
-                            stringBuilder.append(caption.text);
-                        }
+                   //     for(Caption caption:result.description.captions)
+                   //     {
+                            stringBuilder.append(result.color.dominantColorForeground+" "+result.color.dominantColorBackground +" "+result.color.accentColor);
+                  //      }
                         textView.setText(stringBuilder);
 
                     }
@@ -98,5 +120,24 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+
+        if (requestCode == SELECT_PHOTO && resultCode == RESULT_OK && data != null && data.getData()!=null) {
+            Uri pickedImage = data.getData();
+           try {
+                 mBitmap=MediaStore.Images.Media.getBitmap(getContentResolver(),pickedImage);
+                 imageView.setImageBitmap(mBitmap);
+           }
+           catch(IOException e)
+           {
+               e.printStackTrace();
+           }
+
+        }
     }
 }
